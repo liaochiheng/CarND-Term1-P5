@@ -1,8 +1,3 @@
-##Writeup Template
-###You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
-
----
-
 **Vehicle Detection Project**
 
 The goals / steps of this project are the following:
@@ -15,13 +10,13 @@ The goals / steps of this project are the following:
 * Estimate a bounding box for vehicles detected.
 
 [//]: # (Image References)
-[image1]: ./examples/car_not_car.png
-[image2]: ./examples/HOG_example.jpg
-[image3]: ./examples/sliding_windows.jpg
-[image4]: ./examples/sliding_window.jpg
-[image5]: ./examples/bboxes_and_heat.png
-[image6]: ./examples/labels_map.png
-[image7]: ./examples/output_bboxes.png
+[image1]: ./output_images/car_not_car.png
+[image2]: ./output_images/HOG_example.png
+[image3]: ./output_images/bbox.png
+[image4]: ./output_images/sliding_window_frames.png
+[image5]: ./output_images/bboxes_and_heat.png
+[image6]: ./output_images/labels_map.png
+[image7]: ./output_images/output_bboxes.png
 [video1]: ./project_video.mp4
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
@@ -38,7 +33,7 @@ You're reading it!
 
 ####1. Explain how (and identify where in your code) you extracted HOG features from the training images.
 
-The code for this step is contained in the first code cell of the IPython notebook (or in lines # through # of the file called `some_file.py`).  
+The code for this step is contained in the first code cell(Utilitity functions for features extraction) of the IPython notebook [P5.ipynb](https://github.com/liaochiheng/CarND-Term1-P5/blob/master/P5.ipynb).  
 
 I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
 
@@ -53,23 +48,40 @@ Here is an example using the `YCrCb` color space and HOG parameters of `orientat
 
 ####2. Explain how you settled on your final choice of HOG parameters.
 
-I tried various combinations of parameters and...
+I tried combination of Spatial_bin + Color_hist + Hog_all, and that worked fine.
 
 ####3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
-I trained a linear SVM using...
+I defined a class of classifier `CarSVC` in code cell 3(Define a classifier for car detection).
+
+In the `train` function, i split the train and test data manually:
+* Use 'datasets/vehicles/KITTI*/*.png' for car train data
+* Use 'datasets/vehicles/GTI*/*.png' for car test data
+* Use 'datasets/non-vehicles/Extras/*.png' for not-car train data
+* Use 'datasets/non-vehicles/GTI/*.png' for not-car test data
+* Split both car test and not-car test data, 20% into train-data, 80% left remain to test data.
+* The code is:
+    `rand_state = np.random.randint(0, 100)
+    X_train1, X_test, y_train1, y_test = train_test_split(
+        X_test, y_test, test_size=0.8, random_state=rand_state)
+    X_train = np.concatenate( (X_train, X_train1) )
+    y_train = np.concatenate( (y_train, y_train1) )`
+After that, the SVC classifier worked better than before, and reduced some overfitting.
 
 ###Sliding Window Search
 
 ####1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 
-I decided to search random window positions at random scales all over the image and came up with this (ok just kidding I didn't actually ;):
+In code cell (Define a CarFinder class to find cars), I defined a class `CarFinder` for car-detection, and in function `CarFinder.find_cars`, I implemented a sliding window with `orient=9, pix_per_cell=(8*8), cell_per_block=(2*2), scale=1.5, window=(64*64)`. That works just ok.
 
+Here is a demonstration with detected bound boxes drawing on:
 ![alt text][image3]
 
 ####2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
+Optimization the performance of the classifier have been mentioned above, with splitting datasets manually.
+
+Ultimately I searched on scale=1.5 using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images on consecutive 6 frames:
 
 ![alt text][image4]
 ---
@@ -77,7 +89,7 @@ Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spat
 ### Video Implementation
 
 ####1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./project_output.mp4)
 
 
 ####2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
@@ -104,5 +116,12 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 ####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+1). The bigger scale(2.0) works better with closer car-detection, whereas smaller scale(1.5) works better with far away cars. But while added up all kind of scales, the situation is more complicated. It came up with a new problem about thresh for heatmap, which is i should set different thresh on different frames. That's tricky.
+2). The train and test data are not good enough to train a good classifier, even after manually splitting.
+
+2. Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+
+1). I manually splitted the train data, kind of reducing some overfitting.
+2). Multi scale searching is a good bet to try, although there are more comlication to deal with. I will try that further.
+3). I didn't do tracking, which will make connections between ajacent frames, and that will make a better detection. I will try this as well.
 
